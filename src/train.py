@@ -178,14 +178,17 @@ def main(ns_args):
     # ----- Initialize model -----
     model_kwargs = utils.parse_kwargs_arguments(ns_args.model_kwargs)
     model = utils.get_model(model_name=ns_args.model, num_classes=10, **model_kwargs)
+    model = model.to(device)
     # model.compile()  # Use PyTorch Lighting to compile model
 
     # ----- Initialize loss, optimizer and scheduler -----
     feature_kwargs = utils.parse_kwargs_arguments(ns_args.feature_kwargs)
     transform = utils.get_transform(feature_name=ns_args.feature, **feature_kwargs)
+    transform = transform.to(device)
 
     loss_kwargs = utils.parse_kwargs_arguments(ns_args.loss_kwargs)
     loss_fn = utils.get_loss(loss_name=ns_args.loss, **loss_kwargs)
+    loss_fn = loss_fn.to(device)
 
     optimizer_kwargs = utils.parse_kwargs_arguments(ns_args.optimizer_kwargs)
     optimizer = utils.get_optimizer(optim_name=ns_args.optimizer, model=model, lr=ns_args.lr, **optimizer_kwargs)
