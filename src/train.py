@@ -26,6 +26,7 @@ def train_one_epoch(
 ):
     running_loss = 0.
     pbar = tqdm(trn_loader)
+    pbar.set_description_str("Training")
 
     correctly_classified: int = 0
     incorrectly_classified: int = 0
@@ -65,6 +66,7 @@ def validate(
 ):
     running_loss = 0.
     pbar = tqdm(val_loader)
+    pbar.set_description_str("Validation")
 
     correctly_classified: int = 0
     incorrectly_classified: int = 0
@@ -76,7 +78,7 @@ def validate(
             loss = loss_fn(logits, y)
 
             preds = torch.argmax(logits, dim=1)
-            # # print(torch.concatenate((preds.view(-1, 1), y.view(-1, 1)), dim=1))
+            # print(torch.concatenate((preds.view(-1, 1), y.view(-1, 1)), dim=1))
 
             n_correct = torch.sum(preds == y)
             correctly_classified += n_correct
@@ -117,6 +119,11 @@ def train(
     epochs_without_improvement = 0
 
     for epoch in range(num_epochs):
+        len_str = len("EPOCH") + len(str(epoch)) + 3
+        len_cli = int(os.get_terminal_size().columns)
+        size_bars = (len_cli - len_str) - 8
+        print(u'\u2500' * 8 + " EPOCH %d " % (epoch + 1) + u'\u2500' * size_bars)
+
         model.train()
         trn_loss, trn_accuracy = train_one_epoch(
             model=model,
@@ -125,7 +132,6 @@ def train(
             optimizer=optimizer,
             loss_fn=loss_fn)
         scheduler.step()
-        print(trn_loss, trn_accuracy)
 
         model.eval()
         val_loss, val_accuracy = validate(
@@ -134,7 +140,6 @@ def train(
             val_loader=val_loader,
             loss_fn=loss_fn
         )
-        print(val_loss, val_accuracy)
 
         # if val_loss < best_val_loss:
         #     save_checkpoint(model, ...)
@@ -170,8 +175,9 @@ def main(ns_args):
     device = torch.device(device)
 
     # ----- Set manual seed for complete reproducibility -----
-    if seed := ns_args.seed is not None:
+    if (seed := ns_args.seed) is not None:
         # Seeded model initialization
+        print(f"Using seed {seed} for model initialization and data sampling.")
         assert isinstance(seed, int)
         torch.manual_seed(seed)
 
@@ -193,7 +199,7 @@ def main(ns_args):
     optimizer_kwargs = utils.parse_kwargs_arguments(ns_args.optimizer_kwargs)
     optimizer = utils.get_optimizer(optim_name=ns_args.optimizer, model=model, lr=ns_args.lr, **optimizer_kwargs)
 
-    if scheduler := ns_args.scheduler is not None:
+    if (scheduler := ns_args.scheduler) is not None:
         scheduler_kwargs = utils.parse_kwargs_arguments(ns_args.scheduler_kwargs)
         scheduler = utils.get_scheduler(ns_args.scheduler, optimizer=optimizer, **scheduler_kwargs)
 
