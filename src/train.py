@@ -165,7 +165,7 @@ def main(ns_args):
 
     # ----- Initialize model -----
     model_kwargs = utils.parse_kwargs_arguments(ns_args.model_kwargs)
-    model = utils.get_model(model_name=ns_args.model, **model_kwargs)
+    model = utils.get_model(model_name=ns_args.model, num_classes=10, **model_kwargs)
     model.compile()  # Use PyTorch Lighting to compile model
 
     # ----- Initialize loss, optimizer and scheduler -----
@@ -240,9 +240,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=64)
 
     parser.add_argument("--model", type=str, help="type of model to use", required=True)
-    parser.add_argument("--num-classes", type=int, default=10)
-    parser.add_argument("--fc-dropout", type=float, default=None)
-    parser.add_argument("--out-bias", action="store_true")
+    parser.add_argument("--model-kwargs", type=str, default=None)
 
     parser.add_argument("--lr", type=float, default=None)
     parser.add_argument("--optimizer", type=str, default="Adam",
