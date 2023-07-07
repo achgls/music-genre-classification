@@ -1,4 +1,6 @@
 import json
+import os.path
+
 import torch
 
 import transforms
@@ -96,14 +98,16 @@ def get_loss(loss_name, **loss_kwargs):
     return loss_module(**loss_kwargs)
 
 
-def parse_kwargs_arguments(argument):
+def parse_kwargs_arguments(argument: str):
     """
     Returns a set of keyword arguments as a dictionary by reading a specified JSON file or parsing a JSON-like string
     :param argument: path to JSON file or JSON-like string containing keyword arguments
     :return: dictionary containing keyword arguments
     """
-    try:
-        kwargs = json.load(open(argument)) if argument is not None else dict()
-    except FileNotFoundError:
+    if argument is None:
+        kwargs = dict()
+    elif os.path.isfile(argument):
+        kwargs = json.load(open(argument))
+    else:
         kwargs = json.loads(argument)
     return kwargs
