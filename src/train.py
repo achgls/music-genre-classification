@@ -166,7 +166,7 @@ def main(ns_args):
     # ----- Initialize model -----
     model_kwargs = utils.parse_kwargs_arguments(ns_args.model_kwargs)
     model = utils.get_model(model_name=ns_args.model, num_classes=10, **model_kwargs)
-    model.compile()  # Use PyTorch Lighting to compile model
+    # model.compile()  # Use PyTorch Lighting to compile model
 
     # ----- Initialize loss, optimizer and scheduler -----
     feature_kwargs = utils.parse_kwargs_arguments(ns_args.feature_kwargs)
