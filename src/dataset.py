@@ -52,14 +52,15 @@ class GTZANDataset(Dataset):
         else:
             raise AssertionError("Device must be a string or a torch.device object")
 
+        assert 1 <= num_fold <= _config_["n_folds"]
         filenames = get_KFolds(
             data_dir=audio_dir,
             n_folds=_config_["n_folds"],
             seed=_config_["split_seed"],
             format="wav"
-        )[num_fold][0 if part == "training" else 1]
+        )[num_fold+1][0 if part == "training" else 1]
         self.files = filenames
-        print(self.files)
+        print(f"Using {len(self.files)} files for {part}, with {self.device} as device.")
 
         self.sample_rate = sample_rate
         self.overlap = overlap
@@ -72,7 +73,7 @@ class GTZANDataset(Dataset):
         self.index_files = index[:, 0].astype(str)
         self.start_offsets = index[:, 1].astype(int)
         self.to_pad = index[:, 2].astype(int)
-        self.labels = torch.tensor(index[:, 3].astype(int)).to(self.device)
+        self.labels = torch.tensor(index[:, 3].astype(int)).to(self.device, dtype=torch.int64)
 
         self.pad_fn = self.hold_padding
 
