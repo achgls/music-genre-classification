@@ -1,8 +1,8 @@
 import json
 import torch
 
-from . import transforms
-from .models import cnn
+import transforms
+from models import cnn
 
 
 def get_transform(feature_name, **feature_kwargs):

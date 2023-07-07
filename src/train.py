@@ -13,8 +13,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from src.dataset import GTZANDataset
-from src import utils
+from dataset import GTZANDataset
+import utils
 
 
 def train_one_epoch(
