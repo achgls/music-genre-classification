@@ -118,11 +118,11 @@ def train(
 
     epochs_without_improvement = 0
 
-    for epoch in range(num_epochs):
+    for epoch in range(1, num_epochs+1):
         len_str = len("EPOCH") + len(str(epoch)) + 3
         len_cli = int(os.get_terminal_size().columns)
         size_bars = (len_cli - len_str) - 8
-        print(u'\u2500' * 8 + " EPOCH %d " % (epoch + 1) + u'\u2500' * size_bars)
+        print(u'\u2500' * 8 + " EPOCH %d " % epoch + u'\u2500' * size_bars)
 
         model.train()
         trn_loss, trn_accuracy = train_one_epoch(

@@ -33,14 +33,15 @@ class ConvBlock(nn.Module):
 class CNN(nn.Module):
     def __init__(
             self,
-            num_classes,
-            in_channels=1,
-            filters=(32, 64, 128, 256, 128),
-            reduction: Union[int, List, Tuple] = 32,
-            dropout: Union[int, List, Tuple] = .25,
-            fc_dropout=0.,
-            fc_bias=False,
-            pool="flatten",
+            num_classes: int,
+            in_channels: int = 1,
+            filters: Union[int, List[int], Tuple[int]] = (32, 64, 128, 256, 128),
+            reduction: Union[int, List[int], Tuple[int]] = 32,
+            dropout: Union[float, List[float], Tuple[float]] = .25,
+            fc_dropout: float = None,
+            fc_bias: bool = False,
+            pool: str = "flatten",
+            input_size: Tuple[int] = (513, 130)
     ):
         """
         Standard CNN architecture as used in the paper used as a guideline for the project
@@ -90,10 +91,14 @@ class CNN(nn.Module):
             self.pool = nn.AdaptiveAvgPool2d((1, 1))
             self.fc = nn.Linear(filters[-1], num_classes, bias=fc_bias)
         elif pool == "flatten":
+            assert input_size is not None, "When 'flatten' is applied, input size must be specified and fixed."
             self.pool = nn.Flatten()
-            self.fc = nn.Linear(..., num_classes)
+            self.fc = nn.Linear(
+                in_features=(input_size[0] // (2 ** n_layers)) * (input_size[1] // (2 ** n_layers)) * filters[-1],
+                out_features=num_classes, bias=fc_bias)
         else:
             raise AssertionError("Final pooling for fully-connected layer should be either 'flatten' or 'GAP'.")
+
         self.fc_dropout = nn.Dropout(fc_dropout) if fc_dropout is not None else None
 
     def _forward_impl(self, x: Tensor) -> Tensor:
