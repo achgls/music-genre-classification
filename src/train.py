@@ -176,6 +176,9 @@ def main(ns_args):
 
     # ----- Set manual seed for complete reproducibility -----
     if (seed := ns_args.seed) is not None:
+        torch.use_deterministic_algorithms(True)
+        if device == torch.device("cuda"):
+            torch.backends.cudnn.benchmark = False
         # Seeded model initialization
         print(f"Using seed {seed} for model initialization and data sampling.")
         assert isinstance(seed, int)
