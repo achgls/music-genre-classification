@@ -34,17 +34,21 @@ def train_one_epoch(
         optimizer.zero_grad()
 
         x = transform(x)
-        pred = model(x)
-        loss = loss_fn(pred, y)
+        logits = model(x)
+        loss = loss_fn(logits, y)
 
         loss.backward()
         optimizer.step()
 
-        correctly_classified += torch.sum(torch.argmax(pred) == y)
-        incorrectly_classified += (x.size(0) - correctly_classified)
+        preds = torch.argmax(logits, dim=1)
+        # print(torch.concatenate((preds.view(-1, 1), y.view(-1, 1)), dim=1))
+
+        n_correct = torch.sum(preds == y)
+        correctly_classified += n_correct
+        incorrectly_classified += (preds.size(0) - n_correct)
 
         running_loss += loss.item()
-        avg_loss = running_loss / k
+        avg_loss = running_loss / (k + 1)
         avg_acc = correctly_classified / (correctly_classified + incorrectly_classified)
         pbar.set_postfix_str(f"loss = {avg_loss:>6.4f} | accuracy = {avg_acc * 100:>5.2f} %")
 
@@ -68,14 +72,18 @@ def validate(
     with torch.no_grad():
         for k, (x, y) in enumerate(pbar, start=1):
             x = transform(x)
-            pred = model(x)
-            loss = loss_fn(pred, y)
+            logits = model(x)
+            loss = loss_fn(logits, y)
 
-            correctly_classified += torch.sum(torch.argmax(pred) == y)
-            incorrectly_classified += (x.size(0) - correctly_classified)
+            preds = torch.argmax(logits, dim=1)
+            # # print(torch.concatenate((preds.view(-1, 1), y.view(-1, 1)), dim=1))
+
+            n_correct = torch.sum(preds == y)
+            correctly_classified += n_correct
+            incorrectly_classified += (preds.size(0) - n_correct)
 
             running_loss += loss
-            avg_loss = running_loss / k
+            avg_loss = running_loss / (k + 1)
             avg_acc = correctly_classified / (correctly_classified + incorrectly_classified)
             pbar.set_postfix_str(f"val. loss = {avg_loss:>6.4f} | val. accuracy = {avg_acc * 100:>5.2f} %")
 
@@ -128,21 +136,25 @@ def train(
         )
         print(val_loss, val_accuracy)
 
-        if val_loss < best_val_loss:
-            save_checkpoint(model, ...)
-            epochs_without_improvement = 0
-        elif val_accuracy < best_val_accuracy:
-            save_checkpoint(model, ...)
-            epochs_without_improvement = 0
-        else:
-            epochs_without_improvement += 1
-            if epochs_without_improvement >= early_stopping:
-                save_checkpoint(model, ...)
-                return model
+        # if val_loss < best_val_loss:
+        #     save_checkpoint(model, ...)
+        #     epochs_without_improvement = 0
+        # elif val_accuracy < best_val_accuracy:
+        #     save_checkpoint(model, ...)
+        #     epochs_without_improvement = 0
+        # else:
+        #     epochs_without_improvement += 1
+        #     if epochs_without_improvement >= early_stopping:
+        #         save_checkpoint(model, ...)
+        #         return model
 
 
 def main(ns_args):
     assert (batch_size := ns_args.batch_size) > 0, "Batch size must be a positive integer"
+
+    assert os.path.isdir(data_dir := ns_args.data_dir), "Unrecognized data directory"
+    assert 0.0 < (win_duration := ns_args.slice_length) <= 30.0,\
+        "Frame duration should be positive and smaller than length of the whole song extract (30sec)"
 
     assert 0 < (num_epochs := ns_args.num_epochs) <= 1000
     if (early_stopping := ns_args.early_stopping) is not None:
@@ -184,21 +196,21 @@ def main(ns_args):
 
     # ----- Initialize data -----
     trn_data = GTZANDataset(
-        audio_dir=...,
-        num_fold=...,
+        audio_dir=data_dir,
+        num_fold=ns_args.num_fold,
         overlap=0.5,
         sample_rate=22_050,
-        win_duration=3.0,
+        win_duration=win_duration,
         file_duration=30.0,
         part="training",
         device=device
     )
     val_data = GTZANDataset(
-        audio_dir=...,
-        num_fold=...,
+        audio_dir=data_dir,
+        num_fold=ns_args.num_fold,
         overlap=0.5,
         sample_rate=22_050,
-        win_duration=3.0,
+        win_duration=win_duration,
         file_duration=30.0,
         part="validation",
         device=device
@@ -224,10 +236,12 @@ def main(ns_args):
 if __name__ == "__main__":
     parser = ArgumentParser()
 
-    parser.add_argument("--data-dir", type=str, default="../res/audio_data/")
+    print("Parsing arguments...", end=' ')
+    parser.add_argument("--data-dir", type=str, default="res/audio_data/")
     parser.add_argument("--slice-length", type=float, default=3.0)
     parser.add_argument("--device", type=str, default="auto")
-    parser.add_argument("--num-split", type=int, default=None)
+    parser.add_argument("--num-fold", type=int, required=True,
+                        help="Index of fold to use as part of K-Fold cross-validation. From 1 to 5.")
 
     parser.add_argument("--out-path", type=str, default=None)
     parser.add_argument("--model-path", type=str, help="Model checkpoint path in case of warm start", default=None)
@@ -242,7 +256,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, help="type of model to use", required=True)
     parser.add_argument("--model-kwargs", type=str, default=None)
 
-    parser.add_argument("--lr", type=float, default=None)
+    parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--optimizer", type=str, default="Adam",
                         help="Type of optimizer to use (i.e. 'SGD' or 'Adam'). Default: Adam")
     parser.add_argument("--optimizer-kwargs", type=str, default=None)
@@ -260,5 +274,6 @@ if __name__ == "__main__":
     parser.add_argument("--data-aug", action="store_true")
 
     args = parser.parse_args()
+    print("Done")
 
     main(args)
