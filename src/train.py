@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from dataset import GTZANDataset
+from dataset import GTZANDataset, ContaminatedGTZANDataset
 import utils
 
 
@@ -157,7 +157,7 @@ def train(
             save_checkpoint(model, os.path.join(out_path, "checkpoints", "best_loss.pt"))
             epochs_without_improvement = 0
             best_val_loss = val_loss
-        elif val_accuracy < best_val_accuracy:
+        elif val_accuracy > best_val_accuracy:
             save_checkpoint(model, os.path.join(out_path, "checkpoints", "best_acc_%d.pt" % round(val_accuracy)))
             epochs_without_improvement = 0
             best_val_accuracy = val_accuracy
@@ -242,7 +242,14 @@ def main(ns_args):
 
     # ----- Initialize data -----
     num_fold = ns_args.num_fold
-    trn_data = GTZANDataset(
+    if ns_args.contaminated:
+        data_class = ContaminatedGTZANDataset
+        print("Using contaminated datasets.")
+    else:
+        data_class = GTZANDataset
+        print("Using uncontaminated datasets.")
+
+    trn_data = data_class(
         audio_dir=data_dir,
         num_fold=num_fold,
         overlap=0.5,
@@ -250,11 +257,11 @@ def main(ns_args):
         win_duration=win_duration,
         file_duration=30.0,
         part="training",
-        device=device
-    )
-    print(f"Using {len(trn_data.files)} files for training, representing a total of {len(trn_data.start_offsets):,d} "
+        device=device)
+    print(f"Using {len(np.unique(trn_data.index_files))} files for training, representing a total of {len(trn_data.start_offsets):,d} "
           f"{win_duration}-sec extracts.")
-    val_data = GTZANDataset(
+
+    val_data = data_class(
         audio_dir=data_dir,
         num_fold=num_fold,
         overlap=0.5,
@@ -262,9 +269,8 @@ def main(ns_args):
         win_duration=win_duration,
         file_duration=30.0,
         part="validation",
-        device=device
-    )
-    print(f"Using {len(val_data.files)} files for validation, representing a total of {len(val_data.start_offsets):,d} "
+        device=device)
+    print(f"Using {len(np.unique(val_data.index_files))} files for validation, representing a total of {len(val_data.start_offsets):,d} "
           f"{win_duration}-sec extracts.")
 
     trn_loader = DataLoader(trn_data, batch_size=batch_size, shuffle=True)
@@ -323,6 +329,9 @@ if __name__ == "__main__":
                              "specified in the config file. If the original experiment was seeded, this should obtain "
                              "exactly the same results.")
     parser.add_argument("--data-dir", type=str, default="res/audio_data/")
+    parser.add_argument("--contaminated", default=False, action="store_true",
+                        help=f"If flag is present, will use 'contaminated' datasets with extracts from the same song "
+                             f"being both in training and validation sets. Default: False, use uncontaminated data.")
     parser.add_argument("--slice-length", type=float, default=3.0)
     parser.add_argument("--device", type=str, default="auto")
     parser.add_argument("--num-fold", type=int, default=None,

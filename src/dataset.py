@@ -8,12 +8,6 @@ from torchaudio import load, info
 from torch.utils.data import Dataset
 
 
-_config_ = {
-    "split_seed": 123456789,
-    "n_folds": 5,
-    "n_genres": 10
-}
-
 _genres_ = ('blues', 'classical', 'country', 'disco', 'hiphop', 'jazz', 'metal', 'pop', 'reggae', 'rock')
 
 _label_dict_ = {
@@ -32,6 +26,11 @@ def get_KFolds(data_dir: str, n_folds: int, seed: int = None, format='wav') -> L
 
 
 class GTZANDataset(Dataset):
+    _config_ = {
+        "split_seed": 123456789,
+        "n_folds": 5,
+    }
+
     def __init__(
             self,
             audio_dir: str,
@@ -52,13 +51,13 @@ class GTZANDataset(Dataset):
         else:
             raise AssertionError("Device must be a string or a torch.device object")
 
-        assert 1 <= num_fold <= _config_["n_folds"]
+        assert 1 <= num_fold <= self._config_["n_folds"]
         filenames = get_KFolds(
             data_dir=audio_dir,
-            n_folds=_config_["n_folds"],
-            seed=_config_["split_seed"],
+            n_folds=self._config_["n_folds"],
+            seed=self._config_["split_seed"],
             format="wav"
-        )[num_fold-1][0 if part == "training" else 1]
+        )[num_fold - 1][0 if part == "training" else 1]
         self.files = filenames
 
         self.sample_rate = sample_rate
@@ -123,3 +122,56 @@ class GTZANDataset(Dataset):
             num_frames=self.extract_length)[0]
         wav = self.pad_fn(wav, self.to_pad[idx])
         return wav.to(self.device), self.labels[idx]
+
+
+class ContaminatedGTZANDataset(GTZANDataset):
+    _config_ = {
+        "split_seed": 123456789,
+        "n_folds": 3,
+    }
+
+    def __init__(
+            self,
+            audio_dir: str,
+            num_fold: int,
+            overlap: float = 0.5,
+            sample_rate=22_050,
+            win_duration: float = 3.0,
+            file_duration: float = None,
+            part="training",
+            device="auto"
+    ):
+        if isinstance(device, str):
+            if device == "auto":
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+            self.device = torch.device(device)
+        elif isinstance(device, torch.device):
+            self.device = device
+        else:
+            raise AssertionError("Device must be a string or a torch.device object")
+
+        assert 1 <= num_fold <= self._config_["n_folds"]
+
+        filenames = np.array(glob(os.path.join(audio_dir, '*', f'*.wav')))
+        self.files = filenames
+
+        self.sample_rate = sample_rate
+        self.overlap = overlap
+        self.window_duration = win_duration
+        self.extract_length = round(self.window_duration * self.sample_rate)
+        self.file_duration = file_duration
+
+        index = self._compute_index()
+
+        split_idx = [
+            split for split in StratifiedKFold(n_splits=3, shuffle=True, random_state=12345).split(
+                X=np.arange(index.shape[0]), y=index[:, 3].astype(int))
+        ][num_fold - 1][0 if part == "training" else 1]
+
+        self.index_files = index[split_idx, 0].astype(str)
+        self.start_offsets = index[split_idx, 1].astype(int)
+        self.to_pad = index[split_idx, 2].astype(int)
+        self.labels = torch.tensor(index[split_idx, 3].astype(int)).to(self.device, dtype=torch.int64)
+
+        self.pad_fn = self.hold_padding
+
