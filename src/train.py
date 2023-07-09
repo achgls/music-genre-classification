@@ -2,16 +2,14 @@ import os
 from datetime import datetime
 from typing import Union, Iterable
 
-import torchaudio.transforms
 from tqdm import tqdm
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 import json
 
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
 
 from dataset import GTZANDataset
 import utils
@@ -110,11 +108,16 @@ def train(
         loss_fn: nn.Module,
         scheduler: torch.optim.lr_scheduler.LRScheduler,
         early_stopping: int,
-        out_path: str
+        out_path: str,
+        cp_freq: int,
 ):
     # Instead of summary writer, write to a CSV file
     best_val_loss = torch.inf
     best_val_accuracy = 0.
+
+    output_tsv = os.path.join(out_path, "metrics.tsv")
+    with open(output_tsv, 'w') as f:
+        f.write('\t'.join(["epoch", "trn_loss", "val_loss", "trn_acc", "val_acc"]))
 
     epochs_without_improvement = 0
 
@@ -131,7 +134,8 @@ def train(
             trn_loader=trn_loader,
             optimizer=optimizer,
             loss_fn=loss_fn)
-        scheduler.step()
+        if scheduler is not None:
+            scheduler.step()
 
         model.eval()
         val_loss, val_accuracy = validate(
@@ -141,21 +145,46 @@ def train(
             loss_fn=loss_fn
         )
 
-        # if val_loss < best_val_loss:
-        #     save_checkpoint(model, ...)
-        #     epochs_without_improvement = 0
-        # elif val_accuracy < best_val_accuracy:
-        #     save_checkpoint(model, ...)
-        #     epochs_without_improvement = 0
-        # else:
-        #     epochs_without_improvement += 1
-        #     if epochs_without_improvement >= early_stopping:
-        #         save_checkpoint(model, ...)
-        #         return model
+        with open(output_tsv, 'a') as f:
+            f.write('\t'.join([str(epoch), str(trn_loss), str(val_loss), str(trn_accuracy), str(val_accuracy)]))
+
+        if val_loss < best_val_loss:
+            save_checkpoint(model, os.path.join(out_path, "checkpoints", "best_loss.pt"))
+            epochs_without_improvement = 0
+            best_val_loss = val_loss
+        elif val_accuracy < best_val_accuracy:
+            save_checkpoint(model, os.path.join(out_path, "checkpoints", "best_acc_%d.pt" % round(val_accuracy)))
+            epochs_without_improvement = 0
+            best_val_accuracy = val_accuracy
+        else:
+            epochs_without_improvement += 1
+            if epochs_without_improvement >= early_stopping:
+                save_checkpoint(model, os.path.join(out_path, "checkpoints", "epoch%d_early_stopping.pt" % epoch))
+                return model
+
+        if epoch % cp_freq == 0:
+            save_checkpoint(model, os.path.join(out_path, "checkpoints", "epoch%d.pt" % epoch))
 
 
 def main(ns_args):
-    assert (batch_size := ns_args.batch_size) > 0, "Batch size must be a positive integer"
+    # if config file is given, overwrites all other arguments
+    if (config := ns_args.config_file) is not None:
+        print(f"Using config from {config}, overwriting all other arguments.")
+        with open(config, 'r') as f:
+            config_args = json.load(f)
+
+        ns_args = Namespace(**config_args)
+
+    assert ns_args.num_fold is not None
+    assert ns_args.model is not None
+    assert ns_args.num_epochs is not None
+
+    assert (batch_size := ns_args.batch_size) > 0 and isinstance(batch_size, int), \
+        "Batch size must be a positive integer"
+
+    cp_freq = ns_args.cp_freq
+    if cp_freq is not None:
+        assert cp_freq > 0 and isinstance(cp_freq, int), "Checkpoint frequency must be a positive integer."
 
     assert os.path.isdir(data_dir := ns_args.data_dir), "Unrecognized data directory"
     assert 0.0 < (win_duration := ns_args.slice_length) <= 30.0,\
@@ -207,9 +236,10 @@ def main(ns_args):
         scheduler = utils.get_scheduler(ns_args.scheduler, optimizer=optimizer, **scheduler_kwargs)
 
     # ----- Initialize data -----
+    num_fold = ns_args.num_fold
     trn_data = GTZANDataset(
         audio_dir=data_dir,
-        num_fold=ns_args.num_fold,
+        num_fold=num_fold,
         overlap=0.5,
         sample_rate=22_050,
         win_duration=win_duration,
@@ -217,9 +247,11 @@ def main(ns_args):
         part="training",
         device=device
     )
+    print(f"Using {len(trn_data.files)} files for training, representing a total of {len(trn_data.start_offsets):,d} "
+          f"{win_duration}-sec extracts.")
     val_data = GTZANDataset(
         audio_dir=data_dir,
-        num_fold=ns_args.num_fold,
+        num_fold=num_fold,
         overlap=0.5,
         sample_rate=22_050,
         win_duration=win_duration,
@@ -227,9 +259,38 @@ def main(ns_args):
         part="validation",
         device=device
     )
+    print(f"Using {len(val_data.files)} files for validation, representing a total of {len(val_data.start_offsets):,d} "
+          f"{win_duration}-sec extracts.")
 
     trn_loader = DataLoader(trn_data, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
+
+    # ----- Initialize writing directory -----
+    out_path = ns_args.out_path
+    try:
+        os.mkdir(out_path)
+    except FileExistsError:
+        pass
+
+    out_path = os.path.join(out_path, ns_args.model)
+    try:
+        os.mkdir(out_path)
+    except FileExistsError:
+        pass
+
+    run_tag = ns_args.run_tag
+    run_id_list = [run_tag] if run_tag is not None else []
+    run_id_list.extend(["fold%d" % num_fold, timestamp])
+    run_id = "_".join(run_id_list)
+
+    out_path = os.path.join(out_path, run_id)
+    os.mkdir(out_path)
+    os.mkdir(os.path.join(out_path, "checkpoints"))
+
+    # Save experiments config as .json file
+    with open(os.path.join(out_path, "config.json"), 'w') as f:
+        json.dump(vars(ns_args), f, indent=2)
+    print(f"Saved experiment config under {os.path.join(out_path, 'config.json')}")
 
     train(
         num_epochs=num_epochs,
@@ -241,31 +302,40 @@ def main(ns_args):
         loss_fn=loss_fn,
         scheduler=scheduler,
         early_stopping=early_stopping,
-        out_path='',
+        out_path=out_path,
+        cp_freq=cp_freq,
     )
+
+    # Plot and save training and validation curve
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
 
     print("Parsing arguments...", end=' ')
+    parser.add_argument("--config-file", type=str, default=None,
+                        help="If a config file is specified, all other parameters will be overwritten by the arguments "
+                             "specified in the config file. If the original experiment was seeded, this should obtain "
+                             "exactly the same results.")
     parser.add_argument("--data-dir", type=str, default="res/audio_data/")
     parser.add_argument("--slice-length", type=float, default=3.0)
     parser.add_argument("--device", type=str, default="auto")
-    parser.add_argument("--num-fold", type=int, required=True,
+    parser.add_argument("--num-fold", type=int, default=None,
                         help="Index of fold to use as part of K-Fold cross-validation. From 1 to 5.")
 
-    parser.add_argument("--out-path", type=str, default=None)
+    parser.add_argument("--out-path", type=str, default="results", help="Root path to store results.")
+    parser.add_argument("--run-tag", type=str, default=None, help="Additional tag to label the current experiment.")
+    parser.add_argument("--cp-freq", type=int, default=5, help="Number of epochs between model checkpoints.")
     parser.add_argument("--model-path", type=str, help="Model checkpoint path in case of warm start", default=None)
 
-    parser.add_argument("-n", "--num-epochs", type=int, required=True)
+    parser.add_argument("-n", "--num-epochs", type=int, default=None)
     parser.add_argument("--seed", type=int, default=None,
                         help="Seed for parameter initialization and data sampling."
                              "Similar seed should lead to perfectly reproducible results under same parameters.")
     parser.add_argument("--early-stopping", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=64)
 
-    parser.add_argument("--model", type=str, help="type of model to use", required=True)
+    parser.add_argument("--model", type=str, help="type of model to use. required.", default=None)
     parser.add_argument("--model-kwargs", type=str, default=None)
 
     parser.add_argument("--lr", type=float, default=0.001)
@@ -277,13 +347,14 @@ if __name__ == "__main__":
                         help="Type of loss to use. Default: Cross-Entropy")
     parser.add_argument("--loss-kwargs", type=str, default=None)
 
-    parser.add_argument("--scheduler", type=str, default="LinearLR",
-                        help="Type of scheduler to use for the learning rate decay. Default: linear decay.")
+    parser.add_argument("--scheduler", type=str, default=None,
+                        help="Type of scheduler to use for the learning rate decay.")
     parser.add_argument("--scheduler-kwargs", type=str, default=None)
 
-    parser.add_argument("--feature", type=str, default="spec")
+    parser.add_argument("--feature", type=str, default="powerspec")
     parser.add_argument("--feature-kwargs", type=str, default=None)
-    parser.add_argument("--data-aug", action="store_true")
+    parser.add_argument("--spec-aug", action="store_true", default=False)
+    parser.add_argument("--wav-aug", action="store_true", default=False)
 
     args = parser.parse_args()
     print("Done")

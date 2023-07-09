@@ -58,9 +58,8 @@ class GTZANDataset(Dataset):
             n_folds=_config_["n_folds"],
             seed=_config_["split_seed"],
             format="wav"
-        )[num_fold+1][0 if part == "training" else 1]
+        )[num_fold-1][0 if part == "training" else 1]
         self.files = filenames
-        print(f"Using {len(self.files)} files for {part}, with {self.device} as device.")
 
         self.sample_rate = sample_rate
         self.overlap = overlap
