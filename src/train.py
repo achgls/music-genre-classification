@@ -53,7 +53,7 @@ def train_one_epoch(
 
     avg_loss = running_loss / len(trn_loader)
     avg_acc = correctly_classified / (correctly_classified + incorrectly_classified)
-    return avg_loss, avg_acc
+    return avg_loss.cpu.numpy(), avg_acc.cpu.numpy()
 
 
 def validate(
@@ -89,7 +89,7 @@ def validate(
 
     avg_loss = running_loss / len(val_loader)
     avg_acc = correctly_classified / (correctly_classified + incorrectly_classified)
-    return avg_loss, avg_acc
+    return avg_loss.cpu.numpy(), avg_acc.cpu.numpy()
 
 
 def save_checkpoint(model, save_path):
@@ -117,7 +117,7 @@ def train(
 
     output_tsv = os.path.join(out_path, "metrics.tsv")
     with open(output_tsv, 'w') as f:
-        f.write('\t'.join(["epoch", "trn_loss", "val_loss", "trn_acc", "val_acc"]))
+        f.write('\t'.join(["epoch", "trn_loss", "val_loss", "trn_acc", "val_acc"])+'\n')
 
     epochs_without_improvement = 0
 
@@ -146,7 +146,12 @@ def train(
         )
 
         with open(output_tsv, 'a') as f:
-            f.write('\t'.join([str(epoch), str(trn_loss), str(val_loss), str(trn_accuracy), str(val_accuracy)]))
+            f.write('\t'.join([
+                str(epoch),
+                str(trn_loss),
+                str(val_loss),
+                str(trn_accuracy),
+                str(val_accuracy)])+'\n')
 
         if val_loss < best_val_loss:
             save_checkpoint(model, os.path.join(out_path, "checkpoints", "best_loss.pt"))
