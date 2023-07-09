@@ -51,9 +51,9 @@ def train_one_epoch(
         avg_acc = correctly_classified / (correctly_classified + incorrectly_classified)
         pbar.set_postfix_str(f"loss = {avg_loss:>6.4f} | accuracy = {avg_acc * 100:>5.2f} %")
 
-    avg_loss = running_loss / len(trn_loader)
-    avg_acc = correctly_classified / (correctly_classified + incorrectly_classified)
-    return avg_loss.cpu().numpy(), avg_acc.cpu().numpy()
+    avg_loss = float(running_loss / len(trn_loader))
+    avg_acc = float(correctly_classified / (correctly_classified + incorrectly_classified))
+    return avg_loss, avg_acc
 
 
 def validate(
@@ -87,9 +87,9 @@ def validate(
             avg_acc = correctly_classified / (correctly_classified + incorrectly_classified)
             pbar.set_postfix_str(f"val. loss = {avg_loss:>6.4f} | val. accuracy = {avg_acc * 100:>5.2f} %")
 
-    avg_loss = running_loss / len(val_loader)
-    avg_acc = correctly_classified / (correctly_classified + incorrectly_classified)
-    return avg_loss.cpu().numpy(), avg_acc.cpu().numpy()
+    avg_loss = float(running_loss / len(val_loader))
+    avg_acc = float(correctly_classified / (correctly_classified + incorrectly_classified))
+    return avg_loss, avg_acc
 
 
 def save_checkpoint(model, save_path):
