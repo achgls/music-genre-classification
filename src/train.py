@@ -53,7 +53,7 @@ def train_one_epoch(
 
     avg_loss = running_loss / len(trn_loader)
     avg_acc = correctly_classified / (correctly_classified + incorrectly_classified)
-    return avg_loss.cpu.numpy(), avg_acc.cpu.numpy()
+    return avg_loss.cpu().numpy(), avg_acc.cpu().numpy()
 
 
 def validate(
@@ -89,7 +89,7 @@ def validate(
 
     avg_loss = running_loss / len(val_loader)
     avg_acc = correctly_classified / (correctly_classified + incorrectly_classified)
-    return avg_loss.cpu.numpy(), avg_acc.cpu.numpy()
+    return avg_loss.cpu().numpy(), avg_acc.cpu().numpy()
 
 
 def save_checkpoint(model, save_path):
