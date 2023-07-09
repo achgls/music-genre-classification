@@ -12,12 +12,15 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from dataset import GTZANDataset, ContaminatedGTZANDataset
+from augmentations import WaveformAugment, SpecAugment
 import utils
 
 
 def train_one_epoch(
         model,
         transform,
+        wav_aug,
+        spec_aug,
         trn_loader,
         optimizer,
         loss_fn,
@@ -32,7 +35,10 @@ def train_one_epoch(
     for k, (x, y) in enumerate(pbar):
         optimizer.zero_grad()
 
+        if wav_aug is not None: x = wav_aug(x)
         x = transform(x)
+        if spec_aug is not None: x = spec_aug(x)
+
         logits = model(x)
         loss = loss_fn(logits, y)
 
@@ -72,6 +78,7 @@ def validate(
     with torch.no_grad():
         for k, (x, y) in enumerate(pbar, start=1):
             x = transform(x)
+
             logits = model(x)
             loss = loss_fn(logits, y)
 
@@ -102,6 +109,8 @@ def train(
         num_epochs: int,
         model: nn.Module,
         transform: nn.Module,
+        wav_aug: nn.Module,
+        spec_aug: nn.Module,
         trn_loader: Union[torch.utils.data.DataLoader, Iterable],
         val_loader: Union[torch.utils.data.DataLoader, Iterable],
         optimizer: torch.optim.Optimizer,
@@ -131,6 +140,8 @@ def train(
         trn_loss, trn_accuracy = train_one_epoch(
             model=model,
             transform=transform,
+            wav_aug=wav_aug,
+            spec_aug=spec_aug,
             trn_loader=trn_loader,
             optimizer=optimizer,
             loss_fn=loss_fn)
@@ -141,6 +152,8 @@ def train(
         val_loss, val_accuracy = validate(
             model=model,
             transform=transform,
+            wav_aug=wav_aug,
+            spec_aug=spec_aug,
             val_loader=val_loader,
             loss_fn=loss_fn
         )
@@ -229,6 +242,21 @@ def main(ns_args):
     transform = utils.get_transform(feature_name=ns_args.feature, **feature_kwargs)
     transform = transform.to(device)
 
+    wav_aug = None
+    if (wav_aug_kwargs := ns_args.wav_aug) is not None:
+        print(wav_aug_kwargs)
+        wav_aug_kwargs = utils.parse_kwargs_arguments(wav_aug_kwargs)
+        print(wav_aug_kwargs, type(wav_aug_kwargs))
+        print("Apply data augmentation of waveform with following parameters:", wav_aug_kwargs)
+        wav_aug = WaveformAugment(**wav_aug_kwargs)
+    spec_aug = None
+    if (spec_aug_kwargs := ns_args.spec_aug) is not None:
+        print(spec_aug_kwargs)
+        spec_aug_kwargs = utils.parse_kwargs_arguments(spec_aug_kwargs)
+        print(wav_aug_kwargs, type(wav_aug_kwargs))
+        print("Apply data augmentation of waveform with following parameters:", wav_aug_kwargs)
+        spec_aug = SpecAugment(**spec_aug_kwargs)
+
     loss_kwargs = utils.parse_kwargs_arguments(ns_args.loss_kwargs)
     loss_fn = utils.get_loss(loss_name=ns_args.loss, **loss_kwargs)
     loss_fn = loss_fn.to(device)
@@ -307,6 +335,8 @@ def main(ns_args):
         num_epochs=num_epochs,
         model=model,
         transform=transform,
+        wav_aug=wav_aug,
+        spec_aug=spec_aug,
         trn_loader=trn_loader,
         val_loader=val_loader,
         optimizer=optimizer,
@@ -367,8 +397,10 @@ if __name__ == "__main__":
 
     parser.add_argument("--feature", type=str, default="powerspec")
     parser.add_argument("--feature-kwargs", type=str, default=None)
-    parser.add_argument("--spec-aug", action="store_true", default=False)
-    parser.add_argument("--wav-aug", action="store_true", default=False)
+    parser.add_argument("--spec-aug", type=str, default=None,
+                        help="SpecAugment kwargs to feed the spectrogram augmentation module")
+    parser.add_argument("--wav-aug", type=str, default=None,
+                        help="kwargs to feed the waveform augmentation module, i.e min/max SNR and gain values")
 
     args = parser.parse_args()
     print("Done")
