@@ -152,8 +152,6 @@ def train(
         val_loss, val_accuracy = validate(
             model=model,
             transform=transform,
-            wav_aug=wav_aug,
-            spec_aug=spec_aug,
             val_loader=val_loader,
             loss_fn=loss_fn
         )
@@ -286,8 +284,8 @@ def main(ns_args):
         file_duration=30.0,
         part="training",
         device=device)
-    print(f"Using {len(np.unique(trn_data.index_files))} files for training, representing a total of {len(trn_data.start_offsets):,d} "
-          f"{win_duration}-sec extracts.")
+    print(f"Using {len(np.unique(trn_data.index_files))} files for training, "
+          f"representing a total of {len(trn_data.start_offsets):,d} {win_duration}-sec extracts.")
 
     val_data = data_class(
         audio_dir=data_dir,
@@ -298,8 +296,8 @@ def main(ns_args):
         file_duration=30.0,
         part="validation",
         device=device)
-    print(f"Using {len(np.unique(val_data.index_files))} files for validation, representing a total of {len(val_data.start_offsets):,d} "
-          f"{win_duration}-sec extracts.")
+    print(f"Using {len(np.unique(val_data.index_files))} files for validation, "
+          f"representing a total of {len(val_data.start_offsets):,d} {win_duration}-sec extracts.")
 
     trn_loader = DataLoader(trn_data, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
