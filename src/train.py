@@ -373,7 +373,7 @@ if __name__ == "__main__":
     parser.add_argument("--early-stopping", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=64)
 
-    parser.add_argument("--model", type=str, help="type of model to use. required.", default=None)
+    parser.add_argument("--model", type=str, help="Type of model to use. Required.", default=None)
     parser.add_argument("--model-kwargs", type=str, default=None)
 
     parser.add_argument("--lr", type=float, default=0.001)

@@ -11,7 +11,7 @@ as a Kaggle dataset. It can be downloaded into the `res` directory
 directly from the terminal using
 [Kaggle's CLI tool](https://www.kaggle.com/docs/api):
 ```console
-kaggle datasets download -d achgls/gtzan-music-genre
+kaggle datasets download achgls/gtzan-music-genre -p ./res --unzip
 ```
 The GTZAN dataset was originally introduced in the following paper by George Tzanetakis (hence
 the name) in 2002 as part of his Ph.D. thesis work.
@@ -48,7 +48,7 @@ Requirements
 Libraries used in this project are listed in [requirements.txt](requirements.txt) and
 can be installed at once with:
 ```console
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 In addition to those,
 you need a torchaudio-compatible audio backend installed. This would be `soundfile`
