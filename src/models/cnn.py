@@ -45,9 +45,15 @@ class CNN(nn.Module):
     ):
         """
         Standard CNN architecture as used in the paper used as a guideline for the project
+        :param num_classes: number of output classes for classification
+        :param in_channels: number of channels in the input, default=1 for STFT/spec
         :param filters: sequence of integers corresponding to the number of convolutions kernels for each conv layer
         :param reduction: integer or sequence of integers corresponding to the SE reduction ratio for each layer
+        :param dropout: dropout rate to apply at the end of each convolutional layer, single value or sequence
+        :param fc_dropout: if not None, dropout rate to apply on top of the final "feature" vector, default = None
+        :param fc_bias: boolean indicating whether bias should be used in the final, classification layer, default=False
         :param pool: 'flatten' or 'GAP'
+        :param input_size: expected input size (HxW), used if pool = "flatten" to init. FC layer with correct # of units
         """
         super().__init__()
 
