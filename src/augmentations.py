@@ -36,11 +36,11 @@ class RandomWhiteNoise(nn.Module):
     def sample_snr(self, wav: torch.Tensor) -> torch.Tensor:
         assert wav.dim() == 3, "Expected 3D tensor (batch, channel, time)"
         batch_size, n_channels = wav.size()[:-1]
-        snr_t = torch.rand(size=(batch_size,)) * self.delta + self.min_snr
+        snr_t = torch.rand(size=(batch_size,), device=self.device) * self.delta + self.min_snr
         return snr_t.expand(n_channels, -1).transpose(-2, -1)
 
     def forward(self, wav: torch.Tensor) -> torch.Tensor:
-        noise = torch.randn_like(wav)
+        noise = torch.randn_like(wav, device=self.device)
         snr_t = self.sample_snr(wav)
         return F.add_noise(wav, noise, snr=snr_t)
 
@@ -66,7 +66,7 @@ class RandomGain(nn.Module):
     def sample_gain(self, wav: torch.Tensor) -> torch.Tensor:
         assert wav.dim() == 3, "Expected 3D tensor (batch, channel, time)"
         batch_size = wav.size(-3)
-        return torch.rand(size=(batch_size,)) * self.delta + self.min_gain
+        return torch.rand(size=(batch_size,), device=self.device) * self.delta + self.min_gain
 
     def forward(self, wav: torch.Tensor) -> torch.Tensor:
         """

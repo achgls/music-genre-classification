@@ -246,14 +246,14 @@ def main(ns_args):
         wav_aug_kwargs = utils.parse_kwargs_arguments(wav_aug_kwargs)
         print(wav_aug_kwargs, type(wav_aug_kwargs))
         print("Apply data augmentation of waveform with following parameters:", wav_aug_kwargs)
-        wav_aug = WaveformAugment(**wav_aug_kwargs)
+        wav_aug = WaveformAugment(**wav_aug_kwargs).to(device)
     spec_aug = None
     if (spec_aug_kwargs := ns_args.spec_aug) is not None:
         print(spec_aug_kwargs)
         spec_aug_kwargs = utils.parse_kwargs_arguments(spec_aug_kwargs)
         print(wav_aug_kwargs, type(wav_aug_kwargs))
         print("Apply data augmentation of waveform with following parameters:", wav_aug_kwargs)
-        spec_aug = SpecAugment(**spec_aug_kwargs)
+        spec_aug = SpecAugment(**spec_aug_kwargs).to(device)
 
     loss_kwargs = utils.parse_kwargs_arguments(ns_args.loss_kwargs)
     loss_fn = utils.get_loss(loss_name=ns_args.loss, **loss_kwargs)
