@@ -29,9 +29,14 @@ class RandomWhiteNoise(nn.Module):
         assert isinstance(max_snr, int) or isinstance(max_snr, float), "Max. gain must be a scalar numeric value"
         assert (delta := max_snr - min_snr) > 0, "Max. gain must be greater than min. gain"
 
+        self.device = "cpu"
         self.delta = delta
         self.min_snr = min_snr
         self.max_snr = max_snr
+
+    def to(self, device):
+        self.device = device
+        return self
 
     def sample_snr(self, wav: torch.Tensor) -> torch.Tensor:
         assert wav.dim() == 3, "Expected 3D tensor (batch, channel, time)"
@@ -59,9 +64,14 @@ class RandomGain(nn.Module):
         assert isinstance(max_gain, int) or isinstance(max_gain, float), "Max. gain must be a scalar numeric value"
         assert (delta := max_gain - min_gain) > 0, "Max. gain must be greater than min. gain"
 
+        self.device = "cpu"
         self.delta = delta
         self.min_gain = min_gain
         self.max_gain = max_gain
+
+    def to(self, device):
+        self.device = device
+        return self
 
     def sample_gain(self, wav: torch.Tensor) -> torch.Tensor:
         assert wav.dim() == 3, "Expected 3D tensor (batch, channel, time)"
