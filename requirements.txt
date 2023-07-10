@@ -1,0 +1,5 @@
+numpy~=1.23.5
+tqdm~=4.65.0
+scikit-learn~=1.2.1
+torchaudio~=2.0.0
+torch~=2.0.0
