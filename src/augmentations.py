@@ -108,6 +108,13 @@ class WaveformAugment(nn.Module):
         self.white_noise = RandomWhiteNoise(*white_noise_range) if white_noise_range is not None else lambda x: x
         self.random_gain = RandomGain(*gain_db_range) if gain_db_range is not None else lambda x: x
 
+    def to(self, device):
+        if isinstance(self.white_noise, nn.Module):
+            self.white_noise = self.white_noise.to(device)
+        if isinstance(self.random_gain, nn.Module):
+            self.random_gain = self.random_gain.to(device)
+        return self
+
     def forward(self, wav: torch.Tensor) -> torch.Tensor:
         wav = self.random_gain(wav)
         wav = self.white_noise(wav)
