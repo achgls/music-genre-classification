@@ -4,7 +4,7 @@ import os.path
 import torch
 
 import transforms
-from models import cnn
+from models import cnn, resnet
 
 
 def get_transform(feature_name, **feature_kwargs):
@@ -32,7 +32,7 @@ def get_model(model_name, *model_args, **model_kwargs):
     :return: instantiated and initialized torch model as nn.Module object
     """
     found = False
-    for module in [cnn]:
+    for module in [cnn, resnet]:
         try:
             model = getattr(module, model_name)
             found = True
