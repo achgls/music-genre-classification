@@ -16,7 +16,7 @@ _label_dict_ = {
 
 
 def get_KFolds(data_dir: str, n_folds: int, seed: int = None, format='wav') -> List[Tuple[np.ndarray]]:
-    filenames = np.array(glob(os.path.join(data_dir, '*', f'*.{format}')))
+    filenames = np.array(sorted(glob(os.path.join(data_dir, '*', f'*.{format}'))))
     genres = np.array([os.path.split(os.path.split(fn)[0])[1] for fn in filenames])
     splits = [
         (filenames[split[0]], filenames[split[1]])
