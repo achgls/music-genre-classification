@@ -2,6 +2,28 @@ Music genre classification with SENets
 ========================================
 Music genre classification projet as part of the Numerical Analysis for Machine Learning course at Politecnico di Milano, A.Y. 2022-2023.
  
+Usage
+-----
+The following command will run a training for 50 epochs, based on the provided arguments:
+```console
+python src/train.py -n 50 --model CNN --num-fold 1 --seed 11111 \
+	--data_dir /path/to/audio_data/ --out-path /path/to/results/root_dir \
+	--run-tag my-experiment --cp-freq 10 \
+	--early-stopping 10 --batch-size 64 --lr 0.001 \
+	--optimizer Adam --optimizer-kwargs '{"weight_decay":0.0001}'
+	--scheduler LinearLR --scheduler-kwargs '{"total_iters":50, "start_factor"=1.0, "end_factor"=0.1}' \
+	--feature powerspec
+```
+**Note**: It might be necessary to add escape character `\ ` before `"` characters for dict-like
+arguments.
+
+Any experiment will generate a results directory with training metrics as well as a `config.json`
+file. This file can be used an argument to the main script to reproduce the experiment.
+It that experiment was seeded for reproducibility (specified `--seed` argument),
+one should obtain exactly the same results.
+```console
+python src/train.py --config-file /path/to/experiment/config.json
+```
 
 Dataset
 -------

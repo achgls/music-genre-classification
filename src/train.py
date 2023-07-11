@@ -364,7 +364,6 @@ if __name__ == "__main__":
     parser.add_argument("--out-path", type=str, default="results", help="Root path to store results.")
     parser.add_argument("--run-tag", type=str, default=None, help="Additional tag to label the current experiment.")
     parser.add_argument("--cp-freq", type=int, default=5, help="Number of epochs between model checkpoints.")
-    parser.add_argument("--model-path", type=str, help="Model checkpoint path in case of warm start", default=None)
 
     parser.add_argument("-n", "--num-epochs", type=int, default=None)
     parser.add_argument("--seed", type=int, default=None,
