@@ -48,7 +48,7 @@ def powerspec(log=False, normalize=False, norm_axis=None):
     if log:
         transform.add_module("Log", Log1p())
     if normalize:
-        transform.add_module("Std-Mean-Scaling", StdMeanScaling(norm_axis=norm_axis))
+        transform.add_module("Std-Mean-Scaling", StdMeanScaling(axis=norm_axis))
     transform.add_module("Power-Spectrogram", tt.Spectrogram(n_fft=1024, win_length=1024, hop_length=512, power=2.0))
     return transform
 
