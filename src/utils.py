@@ -3,8 +3,8 @@ import os.path
 
 import torch
 
-import transforms
-from models import cnn, resnet, lcnn
+from . import transforms
+from .models import cnn, resnet, lcnn
 
 
 def get_transform(feature_name, **feature_kwargs):
