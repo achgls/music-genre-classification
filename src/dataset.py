@@ -40,8 +40,7 @@ class GTZANDataset(Dataset):
             win_duration: float = 3.0,
             file_duration: float = None,
             part="training",
-            device="auto",
-            evaluation=False,
+            device="auto"
     ):
         if isinstance(device, str):
             if device == "auto":
@@ -60,8 +59,6 @@ class GTZANDataset(Dataset):
             format="wav"
         )[num_fold - 1][0 if part == "training" else 1]
         self.files = filenames
-
-        self.evaluation = evaluation
 
         self.sample_rate = sample_rate
         self.overlap = overlap
@@ -115,9 +112,6 @@ class GTZANDataset(Dataset):
 
         return np.array(index)
 
-    def get_filenames_with_labels_dict(self):
-        return {fn: self._get_label_from_file(fn) for fn in self.files}
-
     def __len__(self):
         return len(self.index_files)
 
@@ -127,8 +121,6 @@ class GTZANDataset(Dataset):
             frame_offset=self.start_offsets[idx],
             num_frames=self.extract_length)[0]
         wav = self.pad_fn(wav, self.to_pad[idx])
-        if self.evaluation:
-            return wav.to(self.device), self.labels[idx], self.index_files[idx]
         return wav.to(self.device), self.labels[idx]
 
 
@@ -183,7 +175,3 @@ class ContaminatedGTZANDataset(GTZANDataset):
 
         self.pad_fn = self.hold_padding
 
-
-class GTZANDatasetFromImage(Dataset):
-    # Allow to use pre-computed spectrogram images
-    pass
