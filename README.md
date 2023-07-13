@@ -95,8 +95,9 @@ Asia-Pacific Signal and Information Processing Association Annual Summit and Con
   year={2020}
 }
 ```
-Criticisms: lack of reproducibility despite claims of outperforming all related work. ***Very likely*** data contamination, from their *data processing* protocol
+**Criticisms**: lack of reproducibility despite claims of outperforming all related work. ***Very likely*** data contamination, from their *data processing* protocol
 and optimistic results.
+
 ----------
 
 <a id="2">[2]</a> 
