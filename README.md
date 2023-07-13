@@ -19,7 +19,7 @@ arguments.
 
 Any experiment will generate a results directory with training metrics as well as a `config.json`
 file. This file can be used an argument to the main script to reproduce the experiment.
-It that experiment was seeded for reproducibility (specified `--seed` argument),
+If that experiment was seeded for reproducibility (specified `--seed` argument),
 one should obtain exactly the same results.
 ```console
 python src/train.py --config-file /path/to/experiment/config.json
@@ -58,7 +58,8 @@ When modifying a certain parameter to evaluate its impact on training, you can t
 that all other parameters remain stable.
 When a seed is given as argument to the script, the model is prevented to use any
 non-deterministic operations, and the seed is set as the pseudo-random
-number generator for the initialization of models weights as well as data sampling.
+number generator for the initialization of models weights, data sampling, as well as random online
+data augmentation if present.
 You might get a `RuntimeError` from NVIDIA backend when trying to run
 reproducible experiments, in that case you will have to set an environment variable as so:
 ```console
@@ -75,12 +76,12 @@ pip install -r requirements.txt
 In addition to those,
 you need a torchaudio-compatible audio backend installed. This would be `soundfile`
 for Windows machines: `pip install soundfile`, and `sox_io` for Unix systems:
-`pip install sox`. More info on bakends are available
+`pip install sox`. More info on backends are available
 on the [PyTorch audio backends documentation](https://pytorch.org/audio/stable/backend.html).
 
 References
 -----------
-Paper suggested as a guideline for the project:
+Paper that was suggested as a guideline for the project:
 
 <a id="1">[1]</a> 
 Xu, Yijie and Zhou, Wuneng, 2020.
@@ -94,6 +95,8 @@ Asia-Pacific Signal and Information Processing Association Annual Summit and Con
   year={2020}
 }
 ```
+Criticisms: lack of reproducibility despite claims of outperforming all related work. ***Very likely*** data contamination, from their *data processing* protocol
+and optimistic results.
 ----------
 
 <a id="2">[2]</a> 
@@ -106,27 +109,3 @@ torchaudio: an audio library for PyTorch, 2021.
   year={2021}
 }
 ```
-
-[//]: # (<a id="3">[3]</a> )
-
-[//]: # (torchvision: computer vision in PyTorch, 2016.)
-
-[//]: # (```bibtex)
-
-[//]: # (@software{TorchVision_maintainers_and_contributors_TorchVision_PyTorch_s_Computer_2016,)
-
-[//]: # (    author = {TorchVision maintainers and contributors},)
-
-[//]: # (    license = {BSD-3-Clause},)
-
-[//]: # (    month = nov,)
-
-[//]: # (    title = {{TorchVision: PyTorch's Computer Vision library}},)
-
-[//]: # (    url = {https://github.com/pytorch/vision},)
-
-[//]: # (    year = {2016})
-
-[//]: # (})
-
-[//]: # (```)
