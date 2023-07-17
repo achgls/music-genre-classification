@@ -1,6 +1,7 @@
 Music genre classification with SENets
 ========================================
-Music genre classification projet as part of the Numerical Analysis for Machine Learning course at Politecnico di Milano, A.Y. 2022-2023.
+Music genre classification project as part of the Numerical Analysis for Machine Learning course at Politecnico di Milano, A.Y. 2022-2023. 
+A report explaining the work that has been done for this project is available [here](report_v1.1.pdf).
  
 Usage
 -----
