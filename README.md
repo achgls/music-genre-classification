@@ -4,7 +4,7 @@ Music genre classification project as part of the Numerical Analysis for Machine
 
 A report explaining the work that has been done for this project is available [here](report_v1.1.pdf).
 
-Also, a streamlit demo of the classifier is available [here](https://github.com/achgls/music-genre-demo).
+Additionally, a Streamlit demo of the classifier is available [here](https://music-genre-classification-demo.streamlit.app/) on Streamlit Community Cloud, which code is available [here](https://github.com/achgls/music-genre-demo).
  
 Usage
 -----
