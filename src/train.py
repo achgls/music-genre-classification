@@ -57,7 +57,10 @@ def train_one_epoch(
         avg_acc = correctly_classified / (correctly_classified + incorrectly_classified)
         pbar.set_postfix_str(f"loss = {avg_loss:>6.4f} | accuracy = {avg_acc * 100:>5.2f} %")
 
-    avg_loss = float(running_loss / len(trn_loader))
+    # Adjust for last batch being potentially smaller (if loader.drop_last is False)
+    running_loss = running_loss - loss.item() * (1 - x.size(0) / val_loader.batch_size)
+    
+    avg_loss = running_loss / len(trn_loader)
     avg_acc = float(correctly_classified / (correctly_classified + incorrectly_classified))
     return avg_loss, avg_acc
 
@@ -89,12 +92,15 @@ def validate(
             correctly_classified += n_correct
             incorrectly_classified += (preds.size(0) - n_correct)
 
-            running_loss += loss
+            running_loss += loss.item()
             avg_loss = running_loss / (k + 1)
             avg_acc = correctly_classified / (correctly_classified + incorrectly_classified)
             pbar.set_postfix_str(f"val. loss = {avg_loss:>6.4f} | val. accuracy = {avg_acc * 100:>5.2f} %")
 
-    avg_loss = float(running_loss / len(val_loader))
+    # Adjust for last batch being potentially smaller (if loader.drop_last is False)
+    running_loss = running_loss - loss.item() * (1 - x.size(0) / val_loader.batch_size)
+    
+    avg_loss = running_loss / len(val_loader)
     avg_acc = float(correctly_classified / (correctly_classified + incorrectly_classified))
     return avg_loss, avg_acc
 
