@@ -105,8 +105,8 @@ class WaveformAugment(nn.Module):
     ):
         super().__init__()
         assert not (white_noise_range is None and gain_db_range is None), "No transform to apply: both ranges are None"
-        self.white_noise = RandomWhiteNoise(*white_noise_range) if white_noise_range is not None else lambda x: x
-        self.random_gain = RandomGain(*gain_db_range) if gain_db_range is not None else lambda x: x
+        self.white_noise = RandomWhiteNoise(*white_noise_range) if white_noise_range is not None else nn.Identity()
+        self.random_gain = RandomGain(*gain_db_range) if gain_db_range is not None else nn.Identity()
 
     def to(self, device):
         if isinstance(self.white_noise, nn.Module):
@@ -136,11 +136,11 @@ class SpecAugment(nn.Module):
 
         self.freq_mask = FrequencyMasking(
             freq_mask_param=max_freq_mask_len,
-            iid_masks=True) if max_freq_mask_len is not None else lambda x: x
+            iid_masks=True) if max_freq_mask_len is not None else nn.Identity()
         self.time_mask = TimeMasking(
             time_mask_param=max_time_mask_len,
             iid_masks=True,
-            p=max_time_mask_frac) if max_time_mask_len is not None else lambda x: x
+            p=max_time_mask_frac) if max_time_mask_len is not None else nn.Identity()
 
     def forward(self, spec: torch.Tensor) -> torch.Tensor:
         """
